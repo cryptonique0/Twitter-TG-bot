@@ -75,10 +75,16 @@ def check_post_count_within_timeframe(
     for tweet in tweets:
         tweet_date = tweet.get('created_at')
         if isinstance(tweet_date, str):
-            # Parse datetime if it's a string
-            tweet_date = datetime.strptime(tweet_date, '%a %b %d %H:%M:%S %z %Y')
+            # Try parsing ISO format first (Twitter API v2), then fall back to v1.1 format
+            try:
+                tweet_date = datetime.fromisoformat(tweet_date.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                try:
+                    tweet_date = datetime.strptime(tweet_date, '%a %b %d %H:%M:%S %z %Y')
+                except ValueError:
+                    continue  # Skip if unable to parse
         
-        if account_created_at <= tweet_date <= timeframe_end:
+        if tweet_date and account_created_at <= tweet_date <= timeframe_end:
             posts_within_timeframe += 1
     
     return posts_within_timeframe <= max_posts
@@ -119,7 +125,14 @@ def filter_early_account(
     created_at = user_data.get('created_at')
     
     if isinstance(created_at, str):
-        created_at = datetime.strptime(created_at, '%a %b %d %H:%M:%S %z %Y')
+        # Try parsing ISO format first (Twitter API v2), then fall back to v1.1 format
+        try:
+            created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            try:
+                created_at = datetime.strptime(created_at, '%a %b %d %H:%M:%S %z %Y')
+            except ValueError:
+                created_at = None
     
     # Check bio keywords
     results['bio_match'] = check_bio_keywords(bio, bio_keywords)

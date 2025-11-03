@@ -275,8 +275,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     text = update.message.text.strip()
     
     # Check if message looks like a Twitter username
-    if text.startswith('@') or (len(text) > 0 and len(text) < 16 and text.replace('_', '').isalnum()):
+    # Twitter usernames: start with @ or are 3-15 alphanumeric chars plus underscore
+    if text.startswith('@'):
         # Treat as username and check it
+        context.args = [text]
+        await check_account(update, context)
+    elif len(text) >= 3 and len(text) <= 15 and all(c.isalnum() or c == '_' for c in text):
+        # Could be a username without @
         context.args = [text]
         await check_account(update, context)
     else:

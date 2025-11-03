@@ -113,9 +113,13 @@ class TwitterAPI:
             List of user data dictionaries
         """
         try:
+            # Search for tweets; we'll get up to max_results * 2 to account for duplicate users
+            # Twitter API requires min 10 and max 100 for search_recent_tweets
+            tweet_max = min(100, max(10, max_results * 5))
+            
             response = self.client.search_recent_tweets(
                 query=query,
-                max_results=min(100, max_results),
+                max_results=tweet_max,
                 tweet_fields=['author_id'],
                 expansions=['author_id'],
                 user_fields=['created_at', 'description', 'public_metrics', 'username', 'name']
@@ -132,6 +136,9 @@ class TwitterAPI:
                         'created_at': user.created_at,
                         'public_metrics': user.public_metrics
                     })
+                    # Limit to max_results users
+                    if len(users) >= max_results:
+                        break
                 return users
             
             return []
